@@ -7,6 +7,7 @@ use Discord\Discord;
 use Discord\WebSockets\Event;
 use Discord\Helpers\Collection;
 use Discord\WebSockets\Intents;
+use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
 
 $dotenv = Dotenv::createImmutable(__DIR__);
@@ -43,49 +44,57 @@ $discord->on('init', function (Discord $discord) {
             return;
         }
 
-        throttle();
-        echo '[THROTTLE RESET] LIMPIANDO MENSAJES - ' . time() . PHP_EOL;
-
-        $channel = $message->channel;
-
-        // delete messages older than X days
-        $channel->getMessageHistory(['limit' => 100])->then(function ($messages) use ($channel) {
-            $deletables = $messages->filter(function ($message) {
-                $days = 60 * 60 * 24 * $GLOBALS["wold_channel_mdl"]; 
-                return time() - $message->timestamp->getTimestamp() > $days;
-            });
-            $channel->deleteMessages($deletables);
-        });
-
-        // delete messages over the limit
-        $channel->getMessageHistory(['limit' => 100])->then(function ($messages) use ($channel) {
-            if ($messages->count() > $GLOBALS["wold_channel_mcl"]) {
-                $deletables = Collection::for(Message::class);
-                $index = 0;
-                foreach ($messages as $message) {
-                    $index++;
-                    if ($index > $GLOBALS["wold_channel_mcl"]) {
-                        $deletables->pushItem($message);
-                    }
-                }
-                $channel->deleteMessages($deletables);
-            }
-        });
-
         if (strpos($message->content, 'bumi') !== false) {
             $message->react('❤️');
         }
+
+        if (!hasBeenThrottled()) {
+            return;
+        };
+
+        cleanChannelMessages($message->channel);
     });
 });
 
-// Throttle: Solo permite la acción si han pasado X segundos desde la última ejecución
-function throttle(){
+function hasBeenThrottled()
+{
+    // Throttle: Solo permite la acción si han pasado X segundos desde la última ejecución
     $currentTime = time(); // Tiempo actual en segundos
     if ($currentTime - $GLOBALS['last_throttle_time'] < $GLOBALS["wold_channel_throttle"]) {
-        return; // Ignora el mensaje si no han pasado más de X segundos
+        return false;
     }
 
     $GLOBALS['last_throttle_time'] = $currentTime;
+    return true;
+}
+
+function cleanChannelMessages(Channel $channel)
+{
+    echo '[THROTTLE RESET] LIMPIANDO MENSAJES - ' . time() . PHP_EOL;
+
+    // delete messages older than X days
+    $channel->getMessageHistory(['limit' => 100])->then(function ($messages) use ($channel) {
+        $deletables = $messages->filter(function ($message) {
+            $days = 60 * 60 * 24 * $GLOBALS["wold_channel_mdl"];
+            return time() - $message->timestamp->getTimestamp() > $days;
+        });
+        $channel->deleteMessages($deletables);
+    });
+
+    // delete messages over the limit
+    $channel->getMessageHistory(['limit' => 100])->then(function ($messages) use ($channel) {
+        if ($messages->count() > $GLOBALS["wold_channel_mcl"]) {
+            $deletables = Collection::for(Message::class);
+            $index = 0;
+            foreach ($messages as $message) {
+                $index++;
+                if ($index > $GLOBALS["wold_channel_mcl"]) {
+                    $deletables->pushItem($message);
+                }
+            }
+            $channel->deleteMessages($deletables);
+        }
+    });
 }
 
 $discord->run();
