@@ -50,7 +50,6 @@ function reactToPing(Discord $discord, Message $message)
 {
     $content = strtolower($message->content);
 
-    // $valid_ping = strpos($content, '@here') !== false || strpos($content, '@everyone') !== false || $message->type == 'REPLY';
     $bot_pinged = strpos($content, '<@!' . $discord->user->id . '>') !== false;
 
     if (!$bot_pinged) {
@@ -61,7 +60,11 @@ function reactToPing(Discord $discord, Message $message)
         $message->reply($message->channel_id);
     }
 
-    if (rand(1, 20) === 1) {
+    if (strpos($content, 'hola') !== false) {
+        $message->channel->sendMessage(genScaryChars());
+    }
+
+    if (rand(1, 10) === 1) {
         $loops = rand(1, 4);
         for ($i = 0; $i < $loops; $i++) {
             $message->channel->sendMessage(genScaryChars());
