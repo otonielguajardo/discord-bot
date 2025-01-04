@@ -4,7 +4,6 @@ use Discord\Discord;
 use Discord\WebSockets\Event;
 use Discord\Helpers\Collection;
 use Discord\WebSockets\Intents;
-use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
 
 $token = $_ENV['TOKEN'];
@@ -23,6 +22,14 @@ $discord = new Discord([
 $discord->on('init', function (Discord $discord) {
 
     $discord->on(Event::MESSAGE_CREATE, function (Message $message, Discord $discord) {
+        cleanWorldChannelMessages($discord);
+
+        // ignore messages from other channels
+        if ($message->channel_id !== $GLOBALS["channel_id"]) {
+            return;
+        }
+
+        // ignore messages from bots
         if ($message->author->bot) {
             return;
         }
@@ -32,19 +39,7 @@ $discord->on('init', function (Discord $discord) {
             return;
         }
 
-        if ($message->channel_id !== $GLOBALS["channel_id"]) {
-            return;
-        }
-
-        if ($message->content === '!config') {
-            $message->channel->sendMessage("WORLD_CHANNEL_ID: " . $GLOBALS["channel_id"]);
-            $message->channel->sendMessage("WORLD_CHANNEL_MESSAGE_DAYS_LIMIT: " . $GLOBALS["channel_mdl"]);
-            $message->channel->sendMessage("WORLD_CHANNEL_MESSAGE_COUNT_LIMIT: " . $GLOBALS["channel_mcl"]);
-            return;
-        }
-
         reactToBumi($message);
-        cleanChannelMessages($message->channel);
     });
 });
 
@@ -56,14 +51,22 @@ function reactToBumi(Message $message)
     }
 }
 
-function cleanChannelMessages(Channel $channel)
+function cleanWorldChannelMessages(Discord $discord)
 {
+    // throttle clean request
     $currentTime = time();
     if ($currentTime - $GLOBALS['channel_last_clean_throttle'] < $GLOBALS["channel_clean_throttle"]) {
         return false;
     }
     $GLOBALS['channel_last_clean_throttle'] = $currentTime;
     echo '[THROTTLE RESET] LIMPIANDO MENSAJES - ' . time() . PHP_EOL;
+
+    // select channel to clean
+    $channel = $discord->getChannel($GLOBALS["channel_id"]);
+    if ($channel === null) {
+        echo 'Channel not found' . PHP_EOL;
+        return;
+    }
 
     // delete messages older than X days
     $channel->getMessageHistory(['limit' => 100])->then(function ($messages) use ($channel) {
