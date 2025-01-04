@@ -23,6 +23,10 @@ $discord = new Discord([
 $discord->on('init', function (Discord $discord) {
 
     $discord->on(Event::MESSAGE_CREATE, function (Message $message, Discord $discord) {
+        if ($message->author->bot) {
+            return;
+        }
+
         if ($message->content === '!channel_id') {
             $message->channel->sendMessage($message->channel_id);
             return;
