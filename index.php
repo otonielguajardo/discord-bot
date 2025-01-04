@@ -10,6 +10,7 @@ $dotenv->safeLoad();
 
 $loop = LoopFactory::create();
 
+require 'http.php';
 require 'bot.php';
 
 $loop->run();
