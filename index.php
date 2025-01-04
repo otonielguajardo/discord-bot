@@ -11,7 +11,7 @@ use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message;
 
 $dotenv = Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+$dotenv->safeLoad();
 
 $token = $_ENV['TOKEN'];
 $GLOBALS["wold_channel_id"] = $_ENV['WORLD_CHANNEL_ID'];
