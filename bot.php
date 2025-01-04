@@ -53,7 +53,7 @@ function reactToPing(Discord $discord, Message $message)
 {
     $content = strtolower($message->content);
 
-    $bot_pinged = strpos($content, '<@!' . $discord->user->id . '>') !== false;
+    $bot_pinged = strpos($content, '<@' . $discord->user->id . '>') !== false;
 
     if (!$bot_pinged) {
         return false;
