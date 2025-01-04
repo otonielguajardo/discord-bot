@@ -22,26 +22,52 @@ $discord = new Discord([
 $discord->on('init', function (Discord $discord) {
 
     $discord->on(Event::MESSAGE_CREATE, function (Message $message, Discord $discord) {
-        cleanWorldChannelMessages($discord);
-
-        // ignore messages from other channels
-        if ($message->channel_id !== $GLOBALS["channel_id"]) {
-            return;
-        }
-
-        // ignore messages from bots
         if ($message->author->bot) {
             return;
         }
 
-        if ($message->content === '!channel_id') {
-            $message->channel->sendMessage($message->channel_id);
-            return;
-        }
-
+        cleanWorldChannelMessages($discord);
         reactToBumi($message);
+        reactToPing($discord, $message);
     });
 });
+
+function genScaryChars($longitud = 10, $ranges = [[33, 47], [58, 64], [91, 96], [123, 126]])
+{
+    $sequence = '';
+    $permittedChars = [];
+    foreach ($ranges as $range) {
+        $permittedChars = array_merge($permittedChars, range($range[0], $range[1]));
+    }
+    for ($i = 0; $i < $longitud; $i++) {
+        $ascii = $permittedChars[array_rand($permittedChars)];
+        $sequence .= chr($ascii);
+    }
+    return $sequence;
+}
+
+function reactToPing(Discord $discord, Message $message)
+{
+    $content = strtolower($message->content);
+
+    // $valid_ping = strpos($content, '@here') !== false || strpos($content, '@everyone') !== false || $message->type == 'REPLY';
+    $bot_pinged = strpos($content, '<@!' . $discord->user->id . '>') !== false;
+
+    if (!$bot_pinged) {
+        return false;
+    }
+
+    if (strpos($content, 'channel_id')) {
+        $message->reply($message->channel_id);
+    }
+
+    if (rand(1, 20) === 1) {
+        $loops = rand(1, 4);
+        for ($i = 0; $i < $loops; $i++) {
+            $message->channel->sendMessage(genScaryChars());
+        }
+    }
+}
 
 function reactToBumi(Message $message)
 {
