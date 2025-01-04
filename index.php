@@ -44,9 +44,7 @@ $discord->on('init', function (Discord $discord) {
             return;
         }
 
-        if (strpos($message->content, 'bumi') !== false) {
-            $message->react('❤️');
-        }
+        reactToBumi($message);
 
         if (!hasBeenThrottled()) {
             return;
@@ -66,6 +64,14 @@ function hasBeenThrottled()
 
     $GLOBALS['last_throttle_time'] = $currentTime;
     return true;
+}
+
+function reactToBumi(Message $message)
+{
+    $content = strtolower($message->content);
+    if (strpos($content, 'bumi') !== false) {
+        $message->react('❤️');
+    }
 }
 
 function cleanChannelMessages(Channel $channel)
