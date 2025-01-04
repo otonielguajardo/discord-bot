@@ -1,16 +1,15 @@
 <?php
 
-if (php_sapi_name() !== 'cli') {
-    http_response_code(200);
-    echo "OK";
-    exit;
-}
-
 require 'vendor/autoload.php';
 
 use Dotenv\Dotenv;
+use React\EventLoop\Factory as LoopFactory;
 
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->safeLoad();
 
+$loop = LoopFactory::create();
+
 require 'bot.php';
+
+$loop->run();

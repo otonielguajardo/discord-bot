@@ -16,7 +16,8 @@ $GLOBALS['last_throttle_time'] = 0;
 
 $discord = new Discord([
     'token' => $token,
-    'intents' => Intents::getAllIntents()
+    'intents' => Intents::getAllIntents(),
+    'loop' => $loop
 ]);
 
 $discord->on('init', function (Discord $discord) {
@@ -96,5 +97,3 @@ function cleanChannelMessages(Channel $channel)
         }
     });
 }
-
-$discord->run();
