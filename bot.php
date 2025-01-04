@@ -30,12 +30,26 @@ $discord->on('init', function (Discord $discord) {
         }
 
         cleanWorldChannelMessages($discord);
-        reactToBumi($message);
-        reactToPing($discord, $message);
+        react($discord, $message);
+
+        if($message->channel->id === $GLOBALS["channel_id"]) {
+            
+            participate($message);
+        }
     });
 });
 
-function genScaryChars($longitud = 10, $ranges = [[33, 47], [58, 64], [91, 96], [123, 126]])
+function participate(Message $message)
+{
+    if (rand(1, 20) === 1) {
+        $loops = rand(1, 4);
+        for ($i = 0; $i < $loops; $i++) {
+            $message->channel->sendMessage(genRandomChars());
+        }
+    }
+}
+
+function genRandomChars($longitud = 20, $ranges = [[33, 47], [58, 64], [91, 96], [123, 126]])
 {
     $sequence = '';
     $permittedChars = [];
@@ -49,37 +63,24 @@ function genScaryChars($longitud = 10, $ranges = [[33, 47], [58, 64], [91, 96], 
     return $sequence;
 }
 
-function reactToPing(Discord $discord, Message $message)
+function react(Discord $discord, Message $message)
 {
     $content = strtolower($message->content);
 
-    $bot_pinged = strpos($content, '<@' . $discord->user->id . '>') !== false;
+    // react to "bumi"
+    if (strpos($content, 'bumi') !== false) {
+        $message->react('❤️');
+    }
 
+    $bot_pinged = strpos($content, '<@' . $discord->user->id . '>') !== false;
     if (!$bot_pinged) {
         return false;
     }
+    // if bot mentioned
 
+    // respond to "channel_id"
     if (strpos($content, 'channel_id') !== false) {
         $message->reply($message->channel_id);
-    }
-
-    if (strpos($content, 'hola') !== false) {
-        $message->channel->sendMessage(genScaryChars());
-    }
-
-    if (rand(1, 10) === 1) {
-        $loops = rand(1, 4);
-        for ($i = 0; $i < $loops; $i++) {
-            $message->channel->sendMessage(genScaryChars());
-        }
-    }
-}
-
-function reactToBumi(Message $message)
-{
-    $content = strtolower($message->content);
-    if (strpos($content, 'bumi') !== false) {
-        $message->react('❤️');
     }
 }
 
@@ -97,7 +98,7 @@ function cleanWorldChannelMessages(Discord $discord)
     $channel = $discord->getChannel($GLOBALS["channel_id"]);
     if ($channel === null) {
         echo 'Channel not found' . PHP_EOL;
-        return;
+        return false;
     }
 
     // delete messages older than X days
