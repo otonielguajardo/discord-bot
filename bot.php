@@ -57,7 +57,7 @@ function reactToPing(Discord $discord, Message $message)
         return false;
     }
 
-    if (strpos($content, 'channel_id')) {
+    if (strpos($content, 'channel_id') !== false) {
         $message->reply($message->channel_id);
     }
 
