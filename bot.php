@@ -20,9 +20,10 @@ $discord = new Discord([
 ]);
 
 $discord->on('init', function (Discord $discord) {
+    echo "Bot {$discord->user->id} ready!", PHP_EOL;
 
     $discord->on(Event::MESSAGE_CREATE, function (Message $message, Discord $discord) {
-        echo "{$message->author->username} sent a message", PHP_EOL;
+        echo "{$message->author->username}: {$message->content}", PHP_EOL;
 
         if ($message->author->bot) {
             return;
