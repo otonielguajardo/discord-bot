@@ -2,19 +2,11 @@
 
 use Discord\Discord;
 use Discord\WebSockets\Event;
-use Discord\Helpers\Collection;
 use Discord\WebSockets\Intents;
 use Discord\Parts\Channel\Message;
 
-$token = $_ENV['TOKEN'];
-$GLOBALS["channel_id"] = $_ENV['WORLD_CHANNEL_ID'];
-$GLOBALS["channel_mdl"] = $_ENV['WORLD_CHANNEL_MESSAGE_DAYS_LIMIT'];
-$GLOBALS["channel_mcl"] = $_ENV['WORLD_CHANNEL_MESSAGE_COUNT_LIMIT'];
-$GLOBALS["channel_clean_throttle"] = $_ENV['WORLD_CHANNEL_THROTTLE'];
-$GLOBALS['channel_last_clean_throttle'] = 0;
-
 $discord = new Discord([
-    'token' => $token,
+    'token' => $_ENV['DISCORD_BOT_TOKEN'],
     'intents' => Intents::getAllIntents(),
     'loop' => $loop
 ]);
@@ -25,22 +17,34 @@ $discord->on('init', function (Discord $discord) {
     $discord->on(Event::MESSAGE_CREATE, function (Message $message, Discord $discord) {
         echo "{$message->author->username}: {$message->content}", PHP_EOL;
 
+        // ignore if message is from bot
         if ($message->author->bot) {
             return;
         }
 
-        cleanWorldChannelMessages($discord);
-        react($discord, $message);
-
-        if($message->channel->id === $GLOBALS["channel_id"]) {
-            
-            participate($message);
+        // check if bot mentioned
+        $content = strtolower($message->content);
+        $botPinged = strpos($content, '<@' . $discord->user->id . '>') !== false;
+        if ($botPinged) {
+            handle($message);
         }
     });
 });
 
-function participate(Message $message)
+function handle(Message $message)
 {
+    // react to mention
+    $message->react('❤️');
+
+    // random chance of replying to message
+    if (rand(1, 20) === 1) {
+        $loops = rand(1, 4);
+        for ($i = 0; $i < $loops; $i++) {
+            $message->reply(genRandomChars());
+        }
+    }
+
+    // random chance of participating in channel
     if (rand(1, 20) === 1) {
         $loops = rand(1, 4);
         for ($i = 0; $i < $loops; $i++) {
@@ -61,67 +65,4 @@ function genRandomChars($longitud = 20, $ranges = [[33, 47], [58, 64], [91, 96],
         $sequence .= chr($ascii);
     }
     return $sequence;
-}
-
-function react(Discord $discord, Message $message)
-{
-    $content = strtolower($message->content);
-
-    // react to "bumi"
-    if (strpos($content, 'bumi') !== false) {
-        $message->react('❤️');
-    }
-
-    $bot_pinged = strpos($content, '<@' . $discord->user->id . '>') !== false;
-    if (!$bot_pinged) {
-        return false;
-    }
-    // if bot mentioned
-
-    // respond to "channel_id"
-    if (strpos($content, 'channel_id') !== false) {
-        $message->reply($message->channel_id);
-    }
-}
-
-function cleanWorldChannelMessages(Discord $discord)
-{
-    // throttle clean request
-    $currentTime = time();
-    if ($currentTime - $GLOBALS['channel_last_clean_throttle'] < $GLOBALS["channel_clean_throttle"]) {
-        return false;
-    }
-    $GLOBALS['channel_last_clean_throttle'] = $currentTime;
-    echo '[THROTTLE RESET] LIMPIANDO MENSAJES - ' . time() . PHP_EOL;
-
-    // select channel to clean
-    $channel = $discord->getChannel($GLOBALS["channel_id"]);
-    if ($channel === null) {
-        echo 'Channel not found' . PHP_EOL;
-        return false;
-    }
-
-    // delete messages older than X days
-    $channel->getMessageHistory(['limit' => 100])->then(function ($messages) use ($channel) {
-        $deletables = $messages->filter(function ($message) {
-            $days = 60 * 60 * 24 * $GLOBALS["channel_mdl"];
-            return time() - $message->timestamp->getTimestamp() > $days;
-        });
-        $channel->deleteMessages($deletables);
-    });
-
-    // delete messages over the limit
-    $channel->getMessageHistory(['limit' => 100])->then(function ($messages) use ($channel) {
-        if ($messages->count() > $GLOBALS["channel_mcl"]) {
-            $deletables = Collection::for(Message::class);
-            $index = 0;
-            foreach ($messages as $message) {
-                $index++;
-                if ($index > $GLOBALS["channel_mcl"]) {
-                    $deletables->pushItem($message);
-                }
-            }
-            $channel->deleteMessages($deletables);
-        }
-    });
 }
