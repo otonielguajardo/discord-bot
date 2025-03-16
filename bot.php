@@ -39,9 +39,7 @@ function handle(Message $message)
     // random chance of replying to message
     if (rand(1, 20) === 1) {
         $loops = rand(1, 4);
-        for ($i = 0; $i < $loops; $i++) {
-            $message->reply(genRandomChars());
-        }
+        $message->reply(genRandomChars());
     }
 
     // random chance of participating in channel
