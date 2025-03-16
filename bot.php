@@ -38,7 +38,6 @@ function handle(Message $message)
 
     // random chance of replying to message
     if (rand(1, 20) === 1) {
-        $loops = rand(1, 4);
         $message->reply(genRandomChars());
     }
 
